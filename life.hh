@@ -16,6 +16,7 @@ public:
     bool At(const int row, const int col) const;
     void Activate(const int row, const int col);
     void Deactivate(const int row, const int col);
+    void Toggle(const int row, const int col);
 
     void Evolve();
     void Print() const;

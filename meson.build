@@ -1,7 +1,7 @@
 project('life', ['cpp'])
 
 check = dependency('check')
-args = ['-pedantic']
+args = ['-pedantic', '-std=c++11']
 
 t = executable('test_game', ['test_life.cpp', 'life.cpp'], cpp_args:args, dependencies: [check])
 

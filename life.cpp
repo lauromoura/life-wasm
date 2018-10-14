@@ -31,6 +31,11 @@ void Game::Deactivate(const int row, const int col)
     Set(row, col, false);
 }
 
+void Game::Toggle(const int row, const int col)
+{
+    Set(row, col, !At(row, col));
+}
+
 void Game::Evolve()
 {
     std::vector<bool> current = board;
@@ -74,7 +79,7 @@ void Game::Print() const
         for (int col = 0; col < cols; col++) {
             bool val = At(row, col);
 
-            std::cout << val << " ";
+            std::cout << (val ? "#" : "_") << " ";
         }
         std::cout << std::endl;
     }
