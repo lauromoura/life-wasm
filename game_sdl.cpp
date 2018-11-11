@@ -4,6 +4,10 @@
 
 #include "life.hh"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 struct context {
 
     const int num_cells;
@@ -51,11 +55,15 @@ void loop_fn(void *data)
     if (SDL_PollEvent(&e)) {
         if (key_up(e, SDLK_ESCAPE) || e.type == SDL_QUIT) {
             ctx->running = false;
+#ifdef __EMSCRIPTEN__
+            emscripten_cancel_main_loop();
+            cleanup(*ctx);
+#endif
             return;
         } else if (key_up(e, SDLK_SPACE)) {
             ctx->evolving = !ctx->evolving;
         } else if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT) {
-            std::cout << "BUTTON LEFT RELEASED!" << std::endl;
+            /* std::cout << "BUTTON LEFT RELEASED!" << std::endl; */
             int clicked_row, clicked_col;
             ctx->translate_mouse(e.button.x, e.button.y, &clicked_row, &clicked_col);
             ctx->game.Toggle(clicked_row, clicked_col);
@@ -64,15 +72,44 @@ void loop_fn(void *data)
 
     int mouse_x;
     int mouse_y;
-    Uint32 mouse_mask = SDL_GetMouseState(&mouse_x, &mouse_y);
+    SDL_GetMouseState(&mouse_x, &mouse_y);
 
-    std::cout << "Mouse at (" << mouse_x << " " << mouse_y << ")" << std::endl;
-
-    SDL_SetRenderDrawColor(ctx->renderer, 0, 0, 255, 255);
-    SDL_RenderClear(ctx->renderer);
+    static int hovered_row;
+    static int hovered_col;
+    int new_hovered_row;
+    int new_hovered_col;
 
     const int cell_height = ctx->step;
     const int cell_width = ctx->step;
+
+    ctx->translate_mouse(mouse_x, mouse_y, &new_hovered_row, &new_hovered_col);
+
+    if (i > 1) {
+        if (new_hovered_row != hovered_row || new_hovered_col != hovered_col) {
+            SDL_Rect hovered_rect;
+            hovered_rect.x = hovered_col * cell_width;
+            hovered_rect.y = hovered_row * cell_height;
+            hovered_rect.w = cell_width;
+            hovered_rect.h = cell_height;
+            bool current = ctx->game.At(hovered_row, hovered_col);
+            if (current)
+                SDL_SetRenderDrawColor(ctx->renderer, 0, 0, 255, 255);
+            else
+                SDL_SetRenderDrawColor(ctx->renderer, 255, 255, 255, 255);
+            SDL_RenderFillRect(ctx->renderer, &hovered_rect);
+        }
+    }
+
+    hovered_row = new_hovered_row;
+    hovered_col = new_hovered_col;
+
+
+    /* std::cout << "Mouse at (" << mouse_x << " " << mouse_y << ")" << std::endl; */
+
+    /* SDL_SetRenderDrawColor(ctx->renderer, 0, 255, 255, 100); */
+    /* SDL_RenderClear(ctx->renderer); */
+
+
 
     for (int row = 0; row < ctx->game.GetRows(); row++) {
         for (int col = 0; col < ctx->game.GetCols(); col++) {
@@ -82,16 +119,22 @@ void loop_fn(void *data)
             rect.y = row * cell_height;
             rect.w = cell_width;
             rect.h = cell_height;
-            if (ctx->game.At(row, col))
+
+            bool current = ctx->game.At(row, col);
+            if (i > 1) {
+                bool previous = ctx->game.At(row, col, Previous);
+
+                if (previous == current)
+                    continue;
+            }
+
+            if (current)
                 SDL_SetRenderDrawColor(ctx->renderer, 0, 0, 255, 255);
             else
                 SDL_SetRenderDrawColor(ctx->renderer, 255, 255, 255, 255);
             SDL_RenderFillRect(ctx->renderer, &rect);
         }
     }
-
-    int hovered_row, hovered_col;
-    ctx->translate_mouse(mouse_x, mouse_y, &hovered_row, &hovered_col);
 
     SDL_Rect hovered_rect;
     hovered_rect.x = hovered_col * cell_width;
@@ -105,12 +148,12 @@ void loop_fn(void *data)
     SDL_RenderPresent(ctx->renderer);
 
     // 0.5 fps
-    if (ctx->evolving && i % 30 == 0) {
+    /* if (ctx->evolving && i % 30 == 0) { */
         ctx->game.Evolve();
-    }
+    /* } */
 
     i++;
-    std::cout << "Rendering frame #" << i << std::endl;
+    /* std::cout << "Rendering frame #" << i << std::endl; */
 }
 
 int main(int argc, char* argv[])
@@ -134,12 +177,16 @@ int main(int argc, char* argv[])
 
     ctx.running = true;
     ctx.evolving = true;
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop_arg(loop_fn, &ctx, 0, 1);
+#else
     while (ctx.running) {
         loop_fn(&ctx);
         SDL_Delay(1000/60);
     }
 
     cleanup(ctx);
+#endif
 
     return 0;
 }

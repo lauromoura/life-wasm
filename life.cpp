@@ -12,11 +12,11 @@ const std::vector<bool>& Game::GetBoard() const { return board; }
 
 
 
-bool Game::At(const int row, const int col) const
+bool Game::At(const int row, const int col, Generation generation) const
 {
     const long idx = row * cols + col;
     if (idx < rows * cols && idx >= 0)
-        return board[idx];
+        return (generation == Current) ? board[idx] : previous[idx];
     else
         return false;
 }
@@ -38,7 +38,7 @@ void Game::Toggle(const int row, const int col)
 
 void Game::Evolve()
 {
-    std::vector<bool> current = board;
+    previous = board;
     // Create new board
     for (int row = 0; row < rows; row++) {
         for (int col = 0; col < cols; col++) {
@@ -60,7 +60,7 @@ void Game::Evolve()
                     if (r >= rows || c >= cols)
                         continue;
 
-                    if (current[r * rows + c])
+                    if (previous[r * rows + c])
                         neighbours_alive++;
                 }
             }

@@ -4,6 +4,11 @@
 
 #include <vector>
 
+enum Generation {
+    Current,
+    Previous
+};
+
 class Game
 {
 public:
@@ -13,7 +18,7 @@ public:
     int GetCols() const;
     const std::vector<bool>& GetBoard() const;
 
-    bool At(const int row, const int col) const;
+    bool At(const int row, const int col, Generation generation=Current) const;
     void Activate(const int row, const int col);
     void Deactivate(const int row, const int col);
     void Toggle(const int row, const int col);
@@ -30,6 +35,7 @@ private:
     int rows;
     int cols;
     std::vector<bool> board;
+    std::vector<bool> previous;
 };
 
 #endif
