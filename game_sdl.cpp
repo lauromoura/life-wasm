@@ -21,7 +21,10 @@ struct context {
     bool evolving;
     Game game;
 
-    context() : num_cells(10), window_size(500), step(window_size / num_cells), game(num_cells, num_cells) { }
+    context() : num_cells(10), window_size(500), step(window_size / num_cells)
+                , window(nullptr), renderer(nullptr)
+                , running(false), evolving(false)
+                , game(num_cells, num_cells) { }
 
     void translate_mouse(int mouse_x, int mouse_y, int* row, int* col) const
     {
@@ -44,7 +47,7 @@ static inline bool key_up(SDL_Event e, SDL_Keycode key)
 
 void loop_fn(void *data)
 {
-    context *ctx = (context *)data;
+    context *ctx = static_cast<context *>(data);
     if (!ctx) {
         std::cerr << "PANIC: Loop context can't be null. Aborting..." << std::endl;
         abort();
